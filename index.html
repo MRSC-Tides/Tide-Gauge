@@ -2,67 +2,78 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Responsive Fixed MATLAB Chart</title>
+    
+    <!-- PWA Web Manifest -->
+    <link rel="manifest" href="manifest.json">
+    
+    <!-- iOS / Safari App Capabilities -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MATLAB Chart">
+    <link rel="apple-touch-icon" href="icon-192.png">
+
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            background-color: #f4f4f9;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            min-height: 100vh;
+        body { 
+            margin: 0; 
+            padding: 0; 
+            background-color: #f4f4f9; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            min-height: 100vh; 
             overflow: hidden;
-        }
-        .chart-container {
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        iframe {
+            /* Prevents double-tap zoom and rubber-banding in mobile browsers */
+            touch-action: none; 
+            position: fixed;
             width: 100%;
             height: 100%;
-            border: none;
+        }
+        .chart-container { 
+            width: 100vw; 
+            height: 100vh; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+        }
+        iframe { 
+            width: 100%; 
+            height: 100%; 
+            border: none; 
         }
     </style>
 </head>
 <body>
-
     <div class="chart-container">
-        <!-- Keep the base URL clean of any predefined width/height parameters -->
         <iframe id="matlabChart" src=""></iframe>
     </div>
-
     <script>
         const chartIframe = document.getElementById('matlabChart');
-        // Extract the base URL clean from any previous query parameters
         const baseUrl = "https://thingspeak.mathworks.com/apps/matlab_visualizations/656261";
 
         function reloadChartWithExactPixels() {
-            // Get the precise viewport width and height of the iPhone screen right now
             const currentWidth = Math.floor(window.innerWidth);
             const currentHeight = Math.floor(window.innerHeight);
             const cacheBuster = new Date().getTime();
-
-            // Construct explicit URL parameters instead of using "auto"
             const targetUrl = `${baseUrl}?width=${currentWidth}&height=${currentHeight}&_nocache=${cacheBuster}`;
-            
             chartIframe.src = targetUrl;
-            console.log(`Forced dimensions: ${currentWidth}x${currentHeight} at ${new Date().toLocaleTimeString()}`);
+            console.log(`Forced dimensions: ${currentWidth}x${currentHeight}`);
         }
 
-        // 1. Run immediately on initial page load
-        window.addEventListener('DOMContentLoaded', reloadChartWithExactPixels);
+        window.addEventListener('DOMContentLoaded', () => {
+            reloadChartWithExactPixels();
+            // Register PWA Service Worker for app behavior
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('sw.js')
+                    .then(() => console.log('Service Worker Registered'))
+                    .catch(err => console.error('SW Registration Failed', err));
+            }
+        });
 
-        // 2. Auto-update every 20 seconds with fresh sizing calculations
         setInterval(reloadChartWithExactPixels, 20000);
 
-        // 3. Handle Portrait <-> Landscape shifts seamlessly
         window.addEventListener('orientationchange', function() {
-            // A 400ms delay ensures WebKit completes its layout calculations before querying sizes
             setTimeout(reloadChartWithExactPixels, 400);
         });
     </script>
